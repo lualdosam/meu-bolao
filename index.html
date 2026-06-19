@@ -8,13 +8,14 @@
         body { font-family: sans-serif; text-align: center; padding: 10px; margin: 0; background-color: #f9f9f9; }
         h1, h2 { font-size: 1.5em; margin: 15px 0; }
         
-        /* Estilos Mobile-First (Base) */
         .container { max-width: 600px; margin: 0 auto; }
         input[type="text"], input[type="number"] { padding: 12px; font-size: 1em; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
         
         #login input[type="text"] { width: 100%; margin-bottom: 10px; }
-        button { background-color: #28a745; color: white; border: none; padding: 15px 30px; font-size: 1em; border-radius: 8px; cursor: pointer; }
+        button { background-color: #28a745; color: white; border: none; padding: 15px 30px; font-size: 1em; border-radius: 8px; cursor: pointer; margin: 5px; }
         button:hover { background-color: #218838; }
+        button.visualizar { background-color: #007bff; }
+        button.visualizar:hover { background-color: #0069d9; }
 
         .jogo-container { background-color: white; padding: 20px; border-radius: 12px; border: 1px solid #eee; margin-top: 20px; }
         .times { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
@@ -25,10 +26,17 @@
 
         #resultados-gerais { text-align: left; margin-top: 30px; background-color: white; padding: 20px; border-radius: 12px; }
         #resultados-gerais ul { list-style-type: none; padding: 0; }
-        #resultados-gerais li { border-bottom: 1px solid #eee; padding: 10px 0; }
+        #resultados-gerais li { border-bottom: 1px solid #eee; padding: 10px 0; display: flex; align-items: center; justify-content: space-between; }
         #resultados-gerais span.palpite { font-weight: bold; }
+        #resultados-gerais span.bandeiras { display: flex; align-items: center; gap: 5px; }
+        #resultados-gerais img { width: 25px; height: auto; }
+
+        /* Estilos do Modal */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
+        .modal-content { background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 500px; border-radius: 12px; }
+        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close:hover, .close:focus { color: black; text-decoration: none; cursor: pointer; }
         
-        /* Regras para telas maiores */
         @media (min-width: 600px) {
             h1, h2 { font-size: 2em; }
             #login input[type="text"] { width: 70%; }
@@ -44,7 +52,8 @@
         
         <div id="login">
             <input type="text" id="nome" placeholder="Insira seu nome aqui">
-            <button onclick="iniciarBolao()">Entrar e Ver Palpites</button>
+            <button onclick="iniciarBolao()">Entrar</button>
+            <button class="visualizar" onclick="abrirModal()">Ver Palpites (Apenas visualização)</button>
         </div>
 
         <div id="apostas" style="display:none;">
@@ -70,17 +79,23 @@
                 </div>
                 
                 <button onclick="enviarPalpite()">Registrar Meu Palpite</button>
+                <button class="visualizar" onclick="abrirModal()">Ver Todos os Palpites</button>
             </div>
+        </div>
 
-            <div id="resultados-gerais">
+        <div id="palpitesModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="fecharModal()">&times;</span>
                 <h3>Placard Geral de Palpites:</h3>
-                <ul id="lista-palpites"></ul>
+                <div id="resultados-gerais">
+                    <ul id="lista-palpites"></ul>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Função para carregar os palpites salvos no localStorage
+        // Função para carregar e exibir os palpites gerais no modal
         function carregarPalpitesGerais() {
             const palpites = JSON.parse(localStorage.getItem('palpitesBolao')) || [];
             const listaHtml = document.getElementById('lista-palpites');
@@ -90,7 +105,15 @@
                 listaHtml.innerHTML = '<li>Nenhum palpite registrado ainda.</li>';
             } else {
                 palpites.forEach(p => {
-                    listaHtml.innerHTML += `<li>${p.nome}: <span class="palpite">${p.placar}</span></li>`;
+                    listaHtml.innerHTML += `
+                        <li>
+                            <span>${p.nome}:</span>
+                            <span class="bandeiras">
+                                <img src="https://flagcdn.com/w40/br.png" alt="Brasil">
+                                <span class="palpite">${p.placar}</span>
+                                <img src="https://flagcdn.com/w40/ht.png" alt="Haiti">
+                            </span>
+                        </li>`;
                 });
             }
         }
@@ -101,12 +124,9 @@
             if (nome) {
                 document.getElementById('login').style.display = 'none';
                 document.getElementById('apostas').style.display = 'block';
-                document.getElementById('mensagemBoasVindas').innerText = "Olá, " + nome + "! Veja o que todos acham:";
+                document.getElementById('mensagemBoasVindas').innerText = "Olá, " + nome + "! Dê o seu palpite:";
                 
-                // Salva o nome no localStorage para o palpite posterior
                 localStorage.setItem('nomeUsuarioAtual', nome);
-                
-                carregarPalpitesGerais(); // Carrega os palpites ao entrar
             } else {
                 alert("Por favor, digite seu nome.");
             }
@@ -118,26 +138,30 @@
             const g2 = document.getElementById('gol2').value;
             const placarFinal = g1 + " x " + g2;
 
-            // Pega a lista existente
             let palpitesGerais = JSON.parse(localStorage.getItem('palpitesBolao')) || [];
-            
-            // Adiciona o novo palpite
             palpitesGerais.push({ nome: nome, placar: placarFinal });
-            
-            // Salva a lista atualizada de volta
             localStorage.setItem('palpitesBolao', JSON.stringify(palpitesGerais));
 
-            carregarPalpitesGerais(); // Atualiza a exibição na tela
             alert("Seu palpite foi registrado no placard geral!");
         }
 
-        // Carrega os palpites gerais ao carregar a página (se já tiverem)
-        window.onload = function() {
-            if (document.getElementById('apostas').style.display === 'block') {
-                carregarPalpitesGerais();
+        // Funções do Modal
+        function abrirModal() {
+            document.getElementById('palpitesModal').style.display = 'block';
+            carregarPalpitesGerais(); // Carrega os palpites ao abrir o modal
+        }
+
+        function fecharModal() {
+            document.getElementById('palpitesModal').style.display = 'none';
+        }
+
+        // Fecha o modal se o usuário clicar fora dele
+        window.onclick = function(event) {
+            const modal = document.getElementById('palpitesModal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
             }
-        };
+        }
     </script>
 </body>
 </html>
-
