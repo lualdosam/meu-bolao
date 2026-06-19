@@ -2,18 +2,22 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Bolão de Futebol da Família Chapada</title>
+    <title>Bolão de Futebol Familia Chapada</title>
     <style>
         body { font-family: sans-serif; text-align: center; padding: 20px; }
         .jogo { margin: 20px; padding: 15px; border: 1px solid #ccc; display: inline-block; }
-        input { width: 40px; text-align: center; }
+        input[type="number"] { width: 40px; text-align: center; }
+        /* Ajuste do campo nome */
+        input[type="text"] { width: 200px; padding: 5px; }
+        #resultados { margin-top: 30px; text-align: left; display: inline-block; }
     </style>
 </head>
 <body>
 
     <h1>Bolão de Futebol</h1>
+    
     <div id="login">
-        <input type="text" id="nome" placeholder="Digite seu nome">
+        <input type="text" id="nome" placeholder="Insira seu nome aqui">
         <button onclick="iniciarBolao()">Entrar</button>
     </div>
 
@@ -21,17 +25,21 @@
         <h2 id="mensagemBoasVindas"></h2>
         <div class="jogo">
             <img src="https://flagcdn.com/w40/br.png" alt="Brasil"> Brasil 
-            <input type="number" id="gol1" min="0"> x <input type="number" id="gol2" min="0"> 
-            <img src="https://flagcdn.com/w40/Hi.png" alt="Haiti"> Haiti
+            <input type="number" id="gol1" min="0" value="0"> x <input type="number" id="gol2" min="0" value="0"> 
+            <img src="https://flagcdn.com/w40/ht.png" alt="Haiti"> Haiti
         </div>
         <br>
         <button onclick="enviarPalpite()">Enviar Palpite</button>
     </div>
 
+    <div id="resultados"></div>
+
     <script>
+        let apostasFeitas = [];
+
         function iniciarBolao() {
             const nome = document.getElementById('nome').value;
-            if (nome) {
+            if (nome.trim() !== "") {
                 document.getElementById('login').style.display = 'none';
                 document.getElementById('apostas').style.display = 'block';
                 document.getElementById('mensagemBoasVindas').innerText = "Olá, " + nome + "! Faça seu palpite:";
@@ -41,10 +49,24 @@
         }
 
         function enviarPalpite() {
+            const nome = document.getElementById('nome').value;
             const g1 = document.getElementById('gol1').value;
             const g2 = document.getElementById('gol2').value;
-            alert("Palpite registrado com sucesso! (Integrar com banco de dados em um passo futuro)");
+
+            // Armazena no array
+            apostasFeitas.push({ nome: nome, placar: g1 + " x " + g2 });
+
+            // Exibe na tela
+            let htmlResultados = "<h3>Palpites Registrados:</h3><ul>";
+            apostasFeitas.forEach(item => {
+                htmlResultados += "<li>" + item.nome + ": " + item.placar + "</li>";
+            });
+            htmlResultados += "</ul>";
+            
+            document.getElementById('resultados').innerHTML = htmlResultados;
+            alert("Palpite de " + nome + " registrado!");
         }
     </script>
 </body>
 </html>
+
