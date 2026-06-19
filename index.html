@@ -2,70 +2,141 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Bolão de Futebol Familia Chapada</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bolão Brasil x Haiti - Resultados Gerais</title>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 20px; }
-        .jogo { margin: 20px; padding: 15px; border: 1px solid #ccc; display: inline-block; }
-        input[type="number"] { width: 40px; text-align: center; }
-        /* Ajuste do campo nome */
-        input[type="text"] { width: 200px; padding: 5px; }
-        #resultados { margin-top: 30px; text-align: left; display: inline-block; }
+        body { font-family: sans-serif; text-align: center; padding: 10px; margin: 0; background-color: #f9f9f9; }
+        h1, h2 { font-size: 1.5em; margin: 15px 0; }
+        
+        /* Estilos Mobile-First (Base) */
+        .container { max-width: 600px; margin: 0 auto; }
+        input[type="text"], input[type="number"] { padding: 12px; font-size: 1em; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
+        
+        #login input[type="text"] { width: 100%; margin-bottom: 10px; }
+        button { background-color: #28a745; color: white; border: none; padding: 15px 30px; font-size: 1em; border-radius: 8px; cursor: pointer; }
+        button:hover { background-color: #218838; }
+
+        .jogo-container { background-color: white; padding: 20px; border-radius: 12px; border: 1px solid #eee; margin-top: 20px; }
+        .times { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
+        .times img { width: 40px; height: auto; }
+        
+        .placares { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 15px 0; }
+        input[type="number"] { width: 60px; text-align: center; }
+
+        #resultados-gerais { text-align: left; margin-top: 30px; background-color: white; padding: 20px; border-radius: 12px; }
+        #resultados-gerais ul { list-style-type: none; padding: 0; }
+        #resultados-gerais li { border-bottom: 1px solid #eee; padding: 10px 0; }
+        #resultados-gerais span.palpite { font-weight: bold; }
+        
+        /* Regras para telas maiores */
+        @media (min-width: 600px) {
+            h1, h2 { font-size: 2em; }
+            #login input[type="text"] { width: 70%; }
+            .jogo-container { padding: 30px; }
+            .times { flex-wrap: nowrap; }
+        }
     </style>
 </head>
 <body>
 
-    <h1>Bolão de Futebol</h1>
-    
-    <div id="login">
-        <input type="text" id="nome" placeholder="Insira seu nome aqui">
-        <button onclick="iniciarBolao()">Entrar</button>
-    </div>
-
-    <div id="apostas" style="display:none;">
-        <h2 id="mensagemBoasVindas"></h2>
-        <div class="jogo">
-            <img src="https://flagcdn.com/w40/br.png" alt="Brasil"> Brasil 
-            <input type="number" id="gol1" min="0" value="0"> x <input type="number" id="gol2" min="0" value="0"> 
-            <img src="https://flagcdn.com/w40/ht.png" alt="Haiti"> Haiti
+    <div class="container">
+        <h1>Bolão Brasil x Haiti</h1>
+        
+        <div id="login">
+            <input type="text" id="nome" placeholder="Insira seu nome aqui">
+            <button onclick="iniciarBolao()">Entrar e Ver Palpites</button>
         </div>
-        <br>
-        <button onclick="enviarPalpite()">Enviar Palpite</button>
-    </div>
 
-    <div id="resultados"></div>
+        <div id="apostas" style="display:none;">
+            <h2 id="mensagemBoasVindas"></h2>
+            
+            <div class="jogo-container">
+                <div class="times">
+                    <div>
+                        <img src="https://flagcdn.com/w80/br.png" alt="Brasil">
+                        <span>Brasil</span>
+                    </div>
+                    <span>vs</span>
+                    <div>
+                        <img src="https://flagcdn.com/w80/ht.png" alt="Haiti">
+                        <span>Haiti</span>
+                    </div>
+                </div>
+
+                <div class="placares">
+                    <input type="number" id="gol1" min="0" value="0">
+                    <span>x</span>
+                    <input type="number" id="gol2" min="0" value="0">
+                </div>
+                
+                <button onclick="enviarPalpite()">Registrar Meu Palpite</button>
+            </div>
+
+            <div id="resultados-gerais">
+                <h3>Placard Geral de Palpites:</h3>
+                <ul id="lista-palpites"></ul>
+            </div>
+        </div>
+    </div>
 
     <script>
-        let apostasFeitas = [];
+        // Função para carregar os palpites salvos no localStorage
+        function carregarPalpitesGerais() {
+            const palpites = JSON.parse(localStorage.getItem('palpitesBolao')) || [];
+            const listaHtml = document.getElementById('lista-palpites');
+            listaHtml.innerHTML = ''; // Limpa a lista antes de adicionar
+
+            if (palpites.length === 0) {
+                listaHtml.innerHTML = '<li>Nenhum palpite registrado ainda.</li>';
+            } else {
+                palpites.forEach(p => {
+                    listaHtml.innerHTML += `<li>${p.nome}: <span class="palpite">${p.placar}</span></li>`;
+                });
+            }
+        }
 
         function iniciarBolao() {
-            const nome = document.getElementById('nome').value;
-            if (nome.trim() !== "") {
+            const nomeInput = document.getElementById('nome');
+            const nome = nomeInput.value.trim();
+            if (nome) {
                 document.getElementById('login').style.display = 'none';
                 document.getElementById('apostas').style.display = 'block';
-                document.getElementById('mensagemBoasVindas').innerText = "Olá, " + nome + "! Faça seu palpite:";
+                document.getElementById('mensagemBoasVindas').innerText = "Olá, " + nome + "! Veja o que todos acham:";
+                
+                // Salva o nome no localStorage para o palpite posterior
+                localStorage.setItem('nomeUsuarioAtual', nome);
+                
+                carregarPalpitesGerais(); // Carrega os palpites ao entrar
             } else {
                 alert("Por favor, digite seu nome.");
             }
         }
 
         function enviarPalpite() {
-            const nome = document.getElementById('nome').value;
+            const nome = localStorage.getItem('nomeUsuarioAtual');
             const g1 = document.getElementById('gol1').value;
             const g2 = document.getElementById('gol2').value;
+            const placarFinal = g1 + " x " + g2;
 
-            // Armazena no array
-            apostasFeitas.push({ nome: nome, placar: g1 + " x " + g2 });
-
-            // Exibe na tela
-            let htmlResultados = "<h3>Palpites Registrados:</h3><ul>";
-            apostasFeitas.forEach(item => {
-                htmlResultados += "<li>" + item.nome + ": " + item.placar + "</li>";
-            });
-            htmlResultados += "</ul>";
+            // Pega a lista existente
+            let palpitesGerais = JSON.parse(localStorage.getItem('palpitesBolao')) || [];
             
-            document.getElementById('resultados').innerHTML = htmlResultados;
-            alert("Palpite de " + nome + " registrado!");
+            // Adiciona o novo palpite
+            palpitesGerais.push({ nome: nome, placar: placarFinal });
+            
+            // Salva a lista atualizada de volta
+            localStorage.setItem('palpitesBolao', JSON.stringify(palpitesGerais));
+
+            carregarPalpitesGerais(); // Atualiza a exibição na tela
+            alert("Seu palpite foi registrado no placard geral!");
         }
+
+        // Carrega os palpites gerais ao carregar a página (se já tiverem)
+        window.onload = function() {
+            if (document.getElementById('apostas').style.display === 'block') {
+                carregarPalpitesGerais();
+            }
+        };
     </script>
 </body>
 </html>
