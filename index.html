@@ -41,13 +41,15 @@
         #admin-panel input { width: 100%; padding: 10px; margin: 5px 0; border-radius: 8px; border: none; color: black; }
 
         .hidden { display: none; }
-        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); display: flex; align-items: center; justify-content: center; z-index: 1000; flex-direction: column; }
         .aviso-inicial { color: #e67e22; font-weight: 600; font-size: 0.9rem; margin-bottom: 15px; }
     </style>
 </head>
 <body>
 
-<div id="loader" class="loading-overlay">Carregando Sistema...</div>
+<div id="loader" class="loading-overlay">
+    <h3 style="color: var(--secondary);">Carregando Sistema...</h3>
+</div>
 
 <div class="app-container">
     <div class="header">
@@ -105,7 +107,7 @@
 </div>
 
 <script>
-    // URL ATUALIZADA AQUI:
+    // A SUA URL MAIS RECENTE
     const API_URL = "https://script.google.com/macros/s/AKfycbwrkEYHlvsJf8mMd4gcm_Yl4Fu9q3i6XM1PpkdKS9AJZ9gI0FqYafpk0fillSiLsnGZ/exec"; 
 
     let jogoInicializado = true;
@@ -114,29 +116,53 @@
 
     async function carregarDados() {
         try {
-            const res = await fetch(API_URL);
-            const data = await res.json();
+            const res = await fetch(API_URL, { redirect: "follow" });
+            const textResponse = await res.text(); // Lemos o texto bruto primeiro para evitar tela branca se for erro de HTML
             
-            jogoInicializado = data.jogo.inicializado;
+            try {
+                const data = JSON.parse(textResponse);
+                
+                jogoInicializado = data.jogo.inicializado;
 
-            if (!jogoInicializado) {
-                document.getElementById('aviso-admin').style.display = 'block';
-                document.getElementById('btn-entrar-bolao').disabled = true;
-                document.getElementById('btn-entrar-bolao').style.opacity = '0.5';
-            } else {
-                document.getElementById('nameA').innerText = data.jogo.tA;
-                document.getElementById('nameB').innerText = data.jogo.tB;
-                document.getElementById('imgA').src = `https://flagcdn.com/w160/${data.jogo.cA}.png`;
-                document.getElementById('imgB').src = `https://flagcdn.com/w160/${data.jogo.cB}.png`;
+                if (!jogoInicializado) {
+                    document.getElementById('aviso-admin').style.display = 'block';
+                    document.getElementById('btn-entrar-bolao').disabled = true;
+                    document.getElementById('btn-entrar-bolao').style.opacity = '0.5';
+                } else {
+                    document.getElementById('nameA').innerText = data.jogo.tA;
+                    document.getElementById('nameB').innerText = data.jogo.tB;
+                    document.getElementById('imgA').src = `https://flagcdn.com/w160/${data.jogo.cA}.png`;
+                    document.getElementById('imgB').src = `https://flagcdn.com/w160/${data.jogo.cB}.png`;
+                }
+
+                renderLista(data.lista);
+                renderStats(data.stats);
+                
+                document.getElementById('loader').style.display = 'none';
+                
+            } catch (jsonError) {
+                // Se cair aqui, o Google enviou uma tela de erro ou login em vez dos dados da planilha
+                document.getElementById('loader').innerHTML = `
+                    <div style="padding: 20px; text-align: center; max-width: 400px;">
+                        <h2 style="color: #d63031;">Erro de Permissão 🔴</h2>
+                        <p style="font-size: 0.95rem; color: #2d3436;">O Google bloqueou o acesso à planilha.</p>
+                        <ul style="text-align: left; font-size: 0.85rem; color: #636e72;">
+                            <li>Abra o Google Apps Script.</li>
+                            <li>Clique em <b>Implantar</b> > <b>Gerenciar implantações</b>.</li>
+                            <li>Edite (no lápis) e marque <b>Nova Versão</b>.</li>
+                            <li>Em Quem tem acesso, coloque obrigatoriamente <b>Qualquer pessoa</b>.</li>
+                        </ul>
+                    </div>
+                `;
             }
-
-            renderLista(data.lista);
-            renderStats(data.stats);
-            
-            document.getElementById('loader').style.display = 'none';
         } catch (e) { 
-            alert("Erro ao conectar com o servidor. Verifique o link da API."); 
-            console.error(e);
+            // Se cair aqui, o site não conseguiu nem chegar no link
+            document.getElementById('loader').innerHTML = `
+                <div style="padding: 20px; text-align: center;">
+                    <h2 style="color: #d63031;">Erro de Conexão ❌</h2>
+                    <p style="font-size: 0.9rem;">Não foi possível acessar o link do Google. Verifique sua internet ou se o link da API está correto.</p>
+                </div>
+            `;
         }
     }
 
@@ -178,14 +204,20 @@
     }
 
     async function apostar() {
-        const nome = localStorage.getItem('userBolao');
-        const p1 = document.getElementById('scoreA').value;
-        const p2 = document.getElementById('scoreB').value;
-        const placar = `${p1} x ${p2}`;
+        try {
+            const nome = localStorage.getItem('userBolao');
+            const p1 = document.getElementById('scoreA').value;
+            const p2 = document.getElementById('scoreB').value;
+            const placar = `${p1} x ${p2}`;
 
-        document.getElementById('loader').style.display = 'flex';
-        await fetch(`${API_URL}?nome=${encodeURIComponent(nome)}&placar=${encodeURIComponent(placar)}`);
-        location.reload();
+            document.getElementById('loader').style.display = 'flex';
+            document.getElementById('loader').innerHTML = '<h3 style="color: var(--primary);">Registrando...</h3>';
+            await fetch(`${API_URL}?nome=${encodeURIComponent(nome)}&placar=${encodeURIComponent(placar)}`, { redirect: "follow" });
+            location.reload();
+        } catch(e) {
+            alert("Erro ao salvar o palpite. Tente novamente.");
+            location.reload();
+        }
     }
 
     function abrirAdmin() { 
@@ -193,16 +225,22 @@
     }
 
     async function salvarJogo() {
-        const tA = document.getElementById('adm-timeA').value;
-        const cA = document.getElementById('adm-codeA').value.toLowerCase();
-        const tB = document.getElementById('adm-timeB').value;
-        const cB = document.getElementById('adm-codeB').value.toLowerCase();
+        try {
+            const tA = document.getElementById('adm-timeA').value;
+            const cA = document.getElementById('adm-codeA').value.toLowerCase();
+            const tB = document.getElementById('adm-timeB').value;
+            const cB = document.getElementById('adm-codeB').value.toLowerCase();
 
-        if(!tA || !cA || !tB || !cB) return alert("Preencha todos os campos do jogo!");
+            if(!tA || !cA || !tB || !cB) return alert("Preencha todos os campos do jogo!");
 
-        document.getElementById('loader').style.display = 'flex';
-        await fetch(`${API_URL}?admin=true&timeA=${encodeURIComponent(tA)}&codeA=${encodeURIComponent(cA)}&timeB=${encodeURIComponent(tB)}&codeB=${encodeURIComponent(cB)}`);
-        location.reload();
+            document.getElementById('loader').style.display = 'flex';
+            document.getElementById('loader').innerHTML = '<h3 style="color: var(--primary);">Atualizando Jogo...</h3>';
+            await fetch(`${API_URL}?admin=true&timeA=${encodeURIComponent(tA)}&codeA=${encodeURIComponent(cA)}&timeB=${encodeURIComponent(tB)}&codeB=${encodeURIComponent(cB)}`, { redirect: "follow" });
+            location.reload();
+        } catch(e) {
+            alert("Erro ao configurar o jogo. Verifique o link e tente novamente.");
+            location.reload();
+        }
     }
 </script>
 </body>
