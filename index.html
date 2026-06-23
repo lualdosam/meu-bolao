@@ -28,4 +28,182 @@
         .btn-sec { background: #dfe6e9; color: #636e72; }
 
         .stats-bar { height: 12px; background: #eee; border-radius: 6px; overflow: hidden; margin: 10px 0; }
-        .stats-fill { height:
+        .stats-fill { height: 100%; background: var(--primary); }
+        .stats-item { margin-bottom: 15px; }
+        .stats-info { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; }
+
+        .bet-list { max-height: 400px; overflow-y: auto; }
+        .bet-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #f1f1f1; }
+        .bet-user { font-size: 0.85rem; font-weight: 600; }
+        .bet-score { background: #f0f2f5; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; color: var(--secondary); }
+
+        #admin-panel { display: none; background: #2d3436; color: white; padding: 20px; border-radius: 20px; margin-top: 20px; }
+        #admin-panel input { width: 100%; padding: 10px; margin: 5px 0; border-radius: 8px; border: none; color: black; }
+
+        .hidden { display: none; }
+        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .aviso-inicial { color: #e67e22; font-weight: 600; font-size: 0.9rem; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+
+<div id="loader" class="loading-overlay">Carregando Sistema...</div>
+
+<div class="app-container">
+    <div class="header">
+        <h1>🏆 Bolão Oficial</h1>
+    </div>
+
+    <div id="step-login" class="card">
+        <div id="aviso-admin" class="aviso-inicial" style="display: none;">⚠️ Nenhum jogo cadastrado ainda. Se você é o administrador, acesse o painel abaixo.</div>
+        <input type="text" id="user-name" placeholder="Seu apelido ou nome" style="width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #ddd;">
+        <button id="btn-entrar-bolao" class="btn-main" onclick="entrar()">Entrar no Bolão</button>
+        <button class="btn-sec" onclick="abrirAdmin()">Painel Admin</button>
+    </div>
+
+    <div id="step-bet" class="hidden">
+        <div class="card">
+            <div class="match-display">
+                <div class="team">
+                    <img id="imgA" src="" alt="">
+                    <p id="nameA">TIME A</p>
+                </div>
+                <div class="score-inputs">
+                    <input type="number" id="scoreA" value="0">
+                    <span>vs</span>
+                    <input type="number" id="scoreB" value="0">
+                </div>
+                <div class="team">
+                    <img id="imgB" src="" alt="">
+                    <p id="nameB">TIME B</p>
+                </div>
+            </div>
+            <button class="btn-main" onclick="apostar()">Registrar Palpite</button>
+        </div>
+
+        <div class="card">
+            <h3 style="font-size: 1rem; margin-top: 0;">📊 Tendência dos Palpites</h3>
+            <div id="infografico"></div>
+        </div>
+
+        <div class="card">
+            <h3 style="font-size: 1rem; margin-top: 0;">👥 Todos os Palpites</h3>
+            <div id="palpites-gerais" class="bet-list"></div>
+        </div>
+    </div>
+
+    <div id="admin-panel">
+        <h3>⚙️ Configurar Jogo</h3>
+        <input type="text" id="adm-timeA" placeholder="Nome Time A (Ex: Brasil)">
+        <input type="text" id="adm-codeA" placeholder="Código Bandeira A (Ex: br)">
+        <input type="text" id="adm-timeB" placeholder="Nome Time B (Ex: Haiti)">
+        <input type="text" id="adm-codeB" placeholder="Código Bandeira B (Ex: ht)">
+        <p style="font-size: 0.7rem;">Consulte códigos em: flagcdn.com</p>
+        <button class="btn-main" onclick="salvarJogo()">Atualizar Bolão</button>
+        <button class="btn-sec" onclick="window.location.reload()">Sair</button>
+    </div>
+</div>
+
+<script>
+    // URL ATUALIZADA AQUI:
+    const API_URL = "https://script.google.com/macros/s/AKfycbwrkEYHlvsJf8mMd4gcm_Yl4Fu9q3i6XM1PpkdKS9AJZ9gI0FqYafpk0fillSiLsnGZ/exec"; 
+
+    let jogoInicializado = true;
+
+    window.onload = () => carregarDados();
+
+    async function carregarDados() {
+        try {
+            const res = await fetch(API_URL);
+            const data = await res.json();
+            
+            jogoInicializado = data.jogo.inicializado;
+
+            if (!jogoInicializado) {
+                document.getElementById('aviso-admin').style.display = 'block';
+                document.getElementById('btn-entrar-bolao').disabled = true;
+                document.getElementById('btn-entrar-bolao').style.opacity = '0.5';
+            } else {
+                document.getElementById('nameA').innerText = data.jogo.tA;
+                document.getElementById('nameB').innerText = data.jogo.tB;
+                document.getElementById('imgA').src = `https://flagcdn.com/w160/${data.jogo.cA}.png`;
+                document.getElementById('imgB').src = `https://flagcdn.com/w160/${data.jogo.cB}.png`;
+            }
+
+            renderLista(data.lista);
+            renderStats(data.stats);
+            
+            document.getElementById('loader').style.display = 'none';
+        } catch (e) { 
+            alert("Erro ao conectar com o servidor. Verifique o link da API."); 
+            console.error(e);
+        }
+    }
+
+    function renderLista(lista) {
+        const div = document.getElementById('palpites-gerais');
+        if(lista.length === 0) {
+            div.innerHTML = '<p style="font-size:0.85rem; color:#888; text-align:center;">Nenhum palpite enviado ainda.</p>';
+            return;
+        }
+        div.innerHTML = lista.map(p => `
+            <div class="bet-item">
+                <span class="bet-user">${p.nome}</span>
+                <span class="bet-score">${p.placar}</span>
+            </div>
+        `).join('');
+    }
+
+    function renderStats(stats) {
+        const div = document.getElementById('infografico');
+        if(stats.length === 0) {
+            div.innerHTML = '<p style="font-size:0.85rem; color:#888;">As estatísticas aparecerão após os primeiros palpites.</p>';
+            return;
+        }
+        div.innerHTML = stats.slice(0, 5).map(s => `
+            <div class="stats-item">
+                <div class="stats-info"><span>${s.placar}</span><span>${s.porcentagem}%</span></div>
+                <div class="stats-bar"><div class="stats-fill" style="width: ${s.porcentagem}%"></div></div>
+            </div>
+        `).join('');
+    }
+
+    function entrar() {
+        if(!jogoInicializado) return;
+        const nome = document.getElementById('user-name').value.trim();
+        if(!nome) return alert("Digite seu nome");
+        localStorage.setItem('userBolao', nome);
+        document.getElementById('step-login').classList.add('hidden');
+        document.getElementById('step-bet').classList.remove('hidden');
+    }
+
+    async function apostar() {
+        const nome = localStorage.getItem('userBolao');
+        const p1 = document.getElementById('scoreA').value;
+        const p2 = document.getElementById('scoreB').value;
+        const placar = `${p1} x ${p2}`;
+
+        document.getElementById('loader').style.display = 'flex';
+        await fetch(`${API_URL}?nome=${encodeURIComponent(nome)}&placar=${encodeURIComponent(placar)}`);
+        location.reload();
+    }
+
+    function abrirAdmin() { 
+        document.getElementById('admin-panel').style.display = 'block'; 
+    }
+
+    async function salvarJogo() {
+        const tA = document.getElementById('adm-timeA').value;
+        const cA = document.getElementById('adm-codeA').value.toLowerCase();
+        const tB = document.getElementById('adm-timeB').value;
+        const cB = document.getElementById('adm-codeB').value.toLowerCase();
+
+        if(!tA || !cA || !tB || !cB) return alert("Preencha todos os campos do jogo!");
+
+        document.getElementById('loader').style.display = 'flex';
+        await fetch(`${API_URL}?admin=true&timeA=${encodeURIComponent(tA)}&codeA=${encodeURIComponent(cA)}&timeB=${encodeURIComponent(tB)}&codeB=${encodeURIComponent(cB)}`);
+        location.reload();
+    }
+</script>
+</body>
+</html>
