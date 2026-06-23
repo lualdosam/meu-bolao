@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bolão Brasil x Haiti - Resultados Gerais</title>
+    <title>Bolão Brasil x Haiti - Arquivo Geral</title>
     <style>
         body { font-family: sans-serif; text-align: center; padding: 10px; margin: 0; background-color: #f9f9f9; }
         h1, h2 { font-size: 1.5em; margin: 15px 0; }
@@ -24,16 +24,18 @@
         .placares { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 15px 0; }
         input[type="number"] { width: 60px; text-align: center; }
 
-        #resultados-gerais { text-align: left; margin-top: 30px; background-color: white; padding: 20px; border-radius: 12px; }
-        #resultados-gerais ul { list-style-type: none; padding: 0; }
+        #resultados-gerais { text-align: left; margin-top: 20px; background-color: white; padding: 10px; border-radius: 12px; max-height: 300px; overflow-y: auto; }
+        #resultados-gerais ul { list-style-type: none; padding: 0; margin: 0; }
         #resultados-gerais li { border-bottom: 1px solid #eee; padding: 10px 0; display: flex; align-items: center; justify-content: space-between; }
         #resultados-gerais span.palpite { font-weight: bold; }
         #resultados-gerais span.bandeiras { display: flex; align-items: center; gap: 5px; }
         #resultados-gerais img { width: 25px; height: auto; }
 
+        .loading { font-style: italic; color: #666; margin: 10px 0; }
+
         /* Estilos do Modal */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
-        .modal-content { background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 500px; border-radius: 12px; }
+        .modal-content { background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 85%; max-width: 500px; border-radius: 12px; box-sizing: border-box;}
         .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
         .close:hover, .close:focus { color: black; text-decoration: none; cursor: pointer; }
         
@@ -53,7 +55,7 @@
         <div id="login">
             <input type="text" id="nome" placeholder="Insira seu nome aqui">
             <button onclick="iniciarBolao()">Entrar</button>
-            <button class="visualizar" onclick="abrirModal()">Ver Palpites (Apenas visualização)</button>
+            <button class="visualizar" onclick="abrirModal()">Ver Palpites Gerais</button>
         </div>
 
         <div id="apostas" style="display:none;">
@@ -78,7 +80,8 @@
                     <input type="number" id="gol2" min="0" value="0">
                 </div>
                 
-                <button onclick="enviarPalpite()">Registrar Meu Palpite</button>
+                <div id="status-envio" class="loading" style="display: none;">Gravando palpite no arquivo central...</div>
+                <button id="btn-enviar" onclick="enviarPalpite()">Registrar Meu Palpite</button>
                 <button class="visualizar" onclick="abrirModal()">Ver Todos os Palpites</button>
             </div>
         </div>
@@ -86,7 +89,8 @@
         <div id="palpitesModal" class="modal">
             <div class="modal-content">
                 <span class="close" onclick="fecharModal()">&times;</span>
-                <h3>Placard Geral de Palpites:</h3>
+                <h3>Palpites Gravados no Arquivo Central</h3>
+                <div id="status-busca" class="loading">Buscando informações na planilha...</div>
                 <div id="resultados-gerais">
                     <ul id="lista-palpites"></ul>
                 </div>
@@ -95,27 +99,39 @@
     </div>
 
     <script>
-        // Função para carregar e exibir os palpites gerais no modal
-        function carregarPalpitesGerais() {
-            const palpites = JSON.parse(localStorage.getItem('palpitesBolao')) || [];
-            const listaHtml = document.getElementById('lista-palpites');
-            listaHtml.innerHTML = ''; // Limpa a lista antes de adicionar
+        // LINK DO SEU GOOGLE APPS SCRIPT (SUBSTITUA ABAIXO)
+        const WEB_APP_URL = "COLE_AQUI_O_SEU_LINK_DO_APPS_SCRIPT";
 
-            if (palpites.length === 0) {
-                listaHtml.innerHTML = '<li>Nenhum palpite registrado ainda.</li>';
-            } else {
-                palpites.forEach(p => {
-                    listaHtml.innerHTML += `
-                        <li>
-                            <span>${p.nome}:</span>
-                            <span class="bandeiras">
-                                <img src="https://flagcdn.com/w40/br.png" alt="Brasil">
-                                <span class="palpite">${p.placar}</span>
-                                <img src="https://flagcdn.com/w40/ht.png" alt="Haiti">
-                            </span>
-                        </li>`;
-                });
-            }
+        function carregarPalpitesGerais() {
+            document.getElementById('status-busca').style.display = 'block';
+            const listaHtml = document.getElementById('lista-palpites');
+            listaHtml.innerHTML = '';
+
+            // Busca os dados em tempo real da Planilha Google via API
+            fetch(WEB_APP_URL)
+            .then(response => response.json())
+            .then(palpites => {
+                document.getElementById('status-busca').style.display = 'none';
+                if (palpites.length === 0) {
+                    listaHtml.innerHTML = '<li>Nenhum palpite registrado no arquivo ainda.</li>';
+                } else {
+                    palpites.forEach(p => {
+                        listaHtml.innerHTML += `
+                            <li>
+                                <span>${p.nome}:</span>
+                                <span class="bandeiras">
+                                    <img src="https://flagcdn.com/w40/br.png" alt="Brasil">
+                                    <span class="palpite">${p.placar}</span>
+                                    <img src="https://flagcdn.com/w40/ht.png" alt="Haiti">
+                                </span>
+                            </li>`;
+                    });
+                }
+            })
+            .catch(error => {
+                document.getElementById('status-busca').innerText = "Erro ao carregar os dados centralizados.";
+                console.error("Erro:", error);
+            });
         }
 
         function iniciarBolao() {
@@ -125,7 +141,6 @@
                 document.getElementById('login').style.display = 'none';
                 document.getElementById('apostas').style.display = 'block';
                 document.getElementById('mensagemBoasVindas').innerText = "Olá, " + nome + "! Dê o seu palpite:";
-                
                 localStorage.setItem('nomeUsuarioAtual', nome);
             } else {
                 alert("Por favor, digite seu nome.");
@@ -138,24 +153,37 @@
             const g2 = document.getElementById('gol2').value;
             const placarFinal = g1 + " x " + g2;
 
-            let palpitesGerais = JSON.parse(localStorage.getItem('palpitesBolao')) || [];
-            palpitesGerais.push({ nome: nome, placar: placarFinal });
-            localStorage.setItem('palpitesBolao', JSON.stringify(palpitesGerais));
+            document.getElementById('status-envio').style.display = 'block';
+            document.getElementById('btn-enviar').disabled = true;
 
-            alert("Seu palpite foi registrado no placard geral!");
+            // Envia o palpite diretamente para a sua Planilha Google salvar no arquivo
+            const urlParaEnviar = `${WEB_APP_URL}?nome=${encodeURIComponent(nome)}&placar=${encodeURIComponent(placarFinal)}`;
+
+            fetch(urlParaEnviar)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('status-envio').style.display = 'none';
+                document.getElementById('btn-enviar').disabled = false;
+                if(data.status === "success") {
+                    alert("Sucesso! Seu palpite foi salvo permanentemente no arquivo geral.");
+                }
+            })
+            .catch(error => {
+                document.getElementById('status-envio').innerText = "Erro ao salvar palpite no servidor central.";
+                document.getElementById('btn-enviar').disabled = false;
+                console.error("Erro:", error);
+            });
         }
 
-        // Funções do Modal
         function abrirModal() {
             document.getElementById('palpitesModal').style.display = 'block';
-            carregarPalpitesGerais(); // Carrega os palpites ao abrir o modal
+            carregarPalpitesGerais();
         }
 
         function fecharModal() {
             document.getElementById('palpitesModal').style.display = 'none';
         }
 
-        // Fecha o modal se o usuário clicar fora dele
         window.onclick = function(event) {
             const modal = document.getElementById('palpitesModal');
             if (event.target == modal) {
