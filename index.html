@@ -13,11 +13,9 @@
         .app-container { max-width: 500px; margin: 0 auto; }
         .card { background: var(--card); border-radius: 20px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-bottom: 20px; }
         
-        /* Cabeçalho */
         .header { text-align: center; padding: 20px 0; }
         .header h1 { margin: 0; font-size: 1.5rem; color: var(--secondary); }
 
-        /* Jogo Principal */
         .match-display { display: flex; align-items: center; justify-content: space-around; text-align: center; }
         .team img { width: 60px; height: 60px; object-fit: contain; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1)); }
         .team p { font-weight: 600; margin: 8px 0; font-size: 0.9rem; }
@@ -25,34 +23,31 @@
         .score-inputs input { width: 50px; height: 50px; text-align: center; font-size: 1.2rem; font-weight: 600; border: 2px solid #eee; border-radius: 12px; outline: none; }
         .score-inputs input:focus { border-color: var(--primary); }
 
-        /* Botões */
         button { width: 100%; padding: 15px; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: 0.3s; margin-top: 10px; }
         .btn-main { background: var(--primary); color: white; }
         .btn-sec { background: #dfe6e9; color: #636e72; }
 
-        /* Gráfico/Infográfico */
         .stats-bar { height: 12px; background: #eee; border-radius: 6px; overflow: hidden; margin: 10px 0; }
         .stats-fill { height: 100%; background: var(--primary); }
         .stats-item { margin-bottom: 15px; }
         .stats-info { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; }
 
-        /* Lista de Apostas */
         .bet-list { max-height: 400px; overflow-y: auto; }
         .bet-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #f1f1f1; }
         .bet-user { font-size: 0.85rem; font-weight: 600; }
         .bet-score { background: #f0f2f5; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; color: var(--secondary); }
 
-        /* Admin */
         #admin-panel { display: none; background: #2d3436; color: white; padding: 20px; border-radius: 20px; margin-top: 20px; }
-        #admin-panel input { width: 100%; padding: 10px; margin: 5px 0; border-radius: 8px; border: none; }
+        #admin-panel input { width: 100%; padding: 10px; margin: 5px 0; border-radius: 8px; border: none; color: black; }
 
         .hidden { display: none; }
         .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .aviso-inicial { color: #e67e22; font-weight: 600; font-size: 0.9rem; margin-bottom: 15px; }
     </style>
 </head>
 <body>
 
-<div id="loader" class="loading-overlay">Carregando Jogo...</div>
+<div id="loader" class="loading-overlay">Carregando Sistema...</div>
 
 <div class="app-container">
     <div class="header">
@@ -60,8 +55,9 @@
     </div>
 
     <div id="step-login" class="card">
+        <div id="aviso-admin" class="aviso-inicial" style="display: none;">⚠️ Nenhum jogo cadastrado ainda. Se você é o administrador, acesse o painel abaixo.</div>
         <input type="text" id="user-name" placeholder="Seu apelido ou nome" style="width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #ddd;">
-        <button class="btn-main" onclick="entrar()">Entrar no Bolão</button>
+        <button id="btn-entrar-bolao" class="btn-main" onclick="entrar()">Entrar no Bolão</button>
         <button class="btn-sec" onclick="abrirAdmin()">Painel Admin</button>
     </div>
 
@@ -109,36 +105,47 @@
 </div>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbyExUtYU6_X6DasS6-X03RrhDA6LtNQ5G8Xi9BxH7nlfEQrIxPFmWmmeTL0-pZTUVaz/exec"; // <--- COLOQUE SUA URL AQUI
+    // URL DO SEU GOOGLE APPS SCRIPT (LEMBRE-SE DE COLOCAR A SUA NOVA URL AQUI)
+    const API_URL = "https://script.google.com/macros/s/AKfycbyExUtYU6_X6DasS6-X03RrhDA6LtNQ5G8Xi9BxH7nlfEQrIxPFmWmmeTL0-pZTUVaz/exec"; 
 
-    let jogoAtual = {};
+    let jogoInicializado = true;
 
-    // Iniciar
     window.onload = () => carregarDados();
 
     async function carregarDados() {
         try {
             const res = await fetch(API_URL);
             const data = await res.json();
-            jogoAtual = data.jogo;
             
-            // Atualiza Visuais
-            document.getElementById('nameA').innerText = data.jogo.tA;
-            document.getElementById('nameB').innerText = data.jogo.tB;
-            document.getElementById('imgA').src = `https://flagcdn.com/w160/${data.jogo.cA}.png`;
-            document.getElementById('imgB').src = `https://flagcdn.com/w160/${data.jogo.cB}.png`;
+            jogoInicializado = data.jogo.inicializado;
 
-            // Atualiza Lista
+            if (!jogoInicializado) {
+                document.getElementById('aviso-admin').style.display = 'block';
+                document.getElementById('btn-entrar-bolao').disabled = true;
+                document.getElementById('btn-entrar-bolao').style.opacity = '0.5';
+            } else {
+                document.getElementById('nameA').innerText = data.jogo.tA;
+                document.getElementById('nameB').innerText = data.jogo.tB;
+                document.getElementById('imgA').src = `https://flagcdn.com/w160/${data.jogo.cA}.png`;
+                document.getElementById('imgB').src = `https://flagcdn.com/w160/${data.jogo.cB}.png`;
+            }
+
             renderLista(data.lista);
-            // Atualiza Stats
             renderStats(data.stats);
             
             document.getElementById('loader').style.display = 'none';
-        } catch (e) { alert("Erro ao carregar dados."); }
+        } catch (e) { 
+            alert("Erro ao conectar com o servidor. Verifique o link da API."); 
+            console.error(e);
+        }
     }
 
     function renderLista(lista) {
         const div = document.getElementById('palpites-gerais');
+        if(lista.length === 0) {
+            div.innerHTML = '<p style="font-size:0.85rem; color:#888; text-align:center;">Nenhum palpite enviado ainda.</p>';
+            return;
+        }
         div.innerHTML = lista.map(p => `
             <div class="bet-item">
                 <span class="bet-user">${p.nome}</span>
@@ -149,6 +156,10 @@
 
     function renderStats(stats) {
         const div = document.getElementById('infografico');
+        if(stats.length === 0) {
+            div.innerHTML = '<p style="font-size:0.85rem; color:#888;">As estatísticas aparecerão após os primeiros palpites.</p>';
+            return;
+        }
         div.innerHTML = stats.slice(0, 5).map(s => `
             <div class="stats-item">
                 <div class="stats-info"><span>${s.placar}</span><span>${s.porcentagem}%</span></div>
@@ -158,7 +169,8 @@
     }
 
     function entrar() {
-        const nome = document.getElementById('user-name').value;
+        if(!jogoInicializado) return;
+        const nome = document.getElementById('user-name').value.trim();
         if(!nome) return alert("Digite seu nome");
         localStorage.setItem('userBolao', nome);
         document.getElementById('step-login').classList.add('hidden');
@@ -176,8 +188,9 @@
         location.reload();
     }
 
-    // Funções Admin
-    function abrirAdmin() { document.getElementById('admin-panel').style.display = 'block'; }
+    function abrirAdmin() { 
+        document.getElementById('admin-panel').style.display = 'block'; 
+    }
 
     async function salvarJogo() {
         const tA = document.getElementById('adm-timeA').value;
@@ -185,13 +198,12 @@
         const tB = document.getElementById('adm-timeB').value;
         const cB = document.getElementById('adm-codeB').value.toLowerCase();
 
+        if(!tA || !cA || !tB || !cB) return alert("Preencha todos os campos do jogo!");
+
         document.getElementById('loader').style.display = 'flex';
-        await fetch(`${API_URL}?admin=true&timeA=${tA}&codeA=${cA}&timeB=${tB}&codeB=${cB}`);
+        await fetch(`${API_URL}?admin=true&timeA=${encodeURIComponent(tA)}&codeA=${encodeURIComponent(cA)}&timeB=${encodeURIComponent(tB)}&codeB=${encodeURIComponent(cB)}`);
         location.reload();
     }
 </script>
-</body>
-</html>
-    </script>
 </body>
 </html>
