@@ -9,169 +9,109 @@
         :root { --primary: #00b894; --secondary: #0984e3; --bg: #f0f2f5; --card: #ffffff; }
         * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         body { background-color: var(--bg); margin: 0; padding: 15px; color: #2d3436; }
-
         .app-container { max-width: 500px; margin: 0 auto; }
         .card { background: var(--card); border-radius: 20px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        
         .header { text-align: center; padding: 20px 0; }
         .header h1 { margin: 0; font-size: 1.5rem; color: var(--secondary); }
-
-        .match-display { display: flex; align-items: center; justify-content: space-around; text-align: center; }
-        .team img { width: 60px; height: 60px; object-fit: contain; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1)); }
-        .team p { font-weight: 600; margin: 8px 0; font-size: 0.9rem; }
-        .score-inputs { display: flex; align-items: center; gap: 10px; }
-        .score-inputs input { width: 50px; height: 50px; text-align: center; font-size: 1.2rem; font-weight: 600; border: 2px solid #eee; border-radius: 12px; outline: none; }
-        .score-inputs input:focus { border-color: var(--primary); }
-
         button { width: 100%; padding: 15px; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: 0.3s; margin-top: 10px; }
         .btn-main { background: var(--primary); color: white; }
         .btn-sec { background: #dfe6e9; color: #636e72; }
-
-        .stats-bar { height: 12px; background: #eee; border-radius: 6px; overflow: hidden; margin: 10px 0; }
-        .stats-fill { height: 100%; background: var(--primary); }
-        .stats-item { margin-bottom: 15px; }
-        .stats-info { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; }
-
-        .bet-list { max-height: 400px; overflow-y: auto; }
-        .bet-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #f1f1f1; }
-        .bet-user { font-size: 0.85rem; font-weight: 600; }
-        .bet-score { background: #f0f2f5; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; color: var(--secondary); }
-
-        #admin-panel { display: none; background: #2d3436; color: white; padding: 20px; border-radius: 20px; margin-top: 20px; }
-        #admin-panel input { width: 100%; padding: 10px; margin: 5px 0; border-radius: 8px; border: none; color: black; }
-
         .hidden { display: none; }
-        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); display: flex; align-items: center; justify-content: center; z-index: 1000; flex-direction: column; }
-        .aviso-inicial { color: #e67e22; font-weight: 600; font-size: 0.9rem; margin-bottom: 15px; }
+        .admin-icon { position: fixed; bottom: 20px; right: 20px; opacity: 0.3; cursor: pointer; font-size: 1.5rem; }
+        .bet-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #f1f1f1; }
+        .bet-user { font-size: 0.9rem; font-weight: 600; }
+        .bet-score { background: #f0f2f5; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; color: var(--secondary); }
     </style>
 </head>
 <body>
 
-<div id="loader" class="loading-overlay">
-    <h3 style="color: var(--secondary);">Carregando Sistema...</h3>
+<div id="loader" class="app-container" style="text-align:center; padding-top:50px;">Carregando...</div>
+
+<div id="step-login" class="app-container hidden">
+    <div class="header"><h1>🏆 Bolão Oficial</h1></div>
+    <div class="card">
+        <input type="text" id="user-name" placeholder="Digite seu nome para apostar" style="width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #ddd; margin-bottom:10px;">
+        <button class="btn-main" onclick="entrar()">Confirmar Nome e Apostar</button>
+        <button class="btn-sec" onclick="irParaConsulta()">Veja as Apostas (Consulta)</button>
+    </div>
 </div>
 
-<div class="app-container">
-    <div class="header">
-        <h1>🏆 Bolão Oficial</h1>
-    </div>
-
-    <div id="step-login" class="card">
-        <div id="aviso-admin" class="aviso-inicial" style="display: none;">⚠️ Nenhum jogo cadastrado ainda. Se você é o administrador, acesse o painel abaixo.</div>
-        <input type="text" id="user-name" placeholder="Seu apelido ou nome" style="width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #ddd;">
-        <button id="btn-entrar-bolao" class="btn-main" onclick="entrar()">Entrar no Bolão</button>
-        <button class="btn-sec" onclick="abrirAdmin()">Painel Admin</button>
-    </div>
-
-    <div id="step-bet" class="hidden">
-        <div class="card">
-            <div class="match-display">
-                <div class="team">
-                    <img id="imgA" src="" alt="">
-                    <p id="nameA">TIME A</p>
-                </div>
-                <div class="score-inputs">
-                    <input type="number" id="scoreA" value="0">
-                    <span>vs</span>
-                    <input type="number" id="scoreB" value="0">
-                </div>
-                <div class="team">
-                    <img id="imgB" src="" alt="">
-                    <p id="nameB">TIME B</p>
-                </div>
+<div id="step-bet" class="app-container hidden">
+    <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; text-align:center;">
+            <div><img id="imgA" width="50"><p id="nameA"></p></div>
+            <div style="display:flex; gap:10px;">
+                <input type="number" id="scoreA" style="width:50px; height:50px; text-align:center; border:2px solid #eee; border-radius:10px;">
+                <input type="number" id="scoreB" style="width:50px; height:50px; text-align:center; border:2px solid #eee; border-radius:10px;">
             </div>
-            <button class="btn-main" onclick="apostar()">Registrar Palpite</button>
+            <div><img id="imgB" width="50"><p id="nameB"></p></div>
         </div>
-
-        <div class="card">
-            <h3 style="font-size: 1rem; margin-top: 0;">📊 Tendência dos Palpites</h3>
-            <div id="infografico"></div>
-        </div>
-
-        <div class="card">
-            <h3 style="font-size: 1rem; margin-top: 0;">👥 Todos os Palpites</h3>
-            <div id="palpites-gerais" class="bet-list"></div>
-        </div>
-    </div>
-
-    <div id="admin-panel">
-        <h3>⚙️ Configurar Jogo</h3>
-        <input type="text" id="adm-timeA" placeholder="Nome Time A (Ex: Brasil)">
-        <input type="text" id="adm-codeA" placeholder="Código Bandeira A (Ex: br)">
-        <input type="text" id="adm-timeB" placeholder="Nome Time B (Ex: Haiti)">
-        <input type="text" id="adm-codeB" placeholder="Código Bandeira B (Ex: ht)">
-        <p style="font-size: 0.7rem;">Consulte códigos em: flagcdn.com</p>
-        <button class="btn-main" onclick="salvarJogo()">Atualizar Bolão</button>
-        <button class="btn-sec" onclick="window.location.reload()">Sair</button>
+        <button class="btn-main" onclick="apostar()">Registrar meu Palpite</button>
+        <button class="btn-sec" onclick="irParaConsulta()">Voltar</button>
     </div>
 </div>
+
+<div id="step-view" class="app-container hidden">
+    <div id="msg-sucesso" class="card" style="display:none; background:#00b894; color:white; text-align:center;">
+        <h2 style="margin:0;">✅ Palpite Registrado!</h2>
+    </div>
+    <div class="card">
+        <button class="btn-main" onclick="irParaLogin()">Dê o seu palpite</button>
+    </div>
+    <div class="card">
+        <h3>👥 Todos os Palpites</h3>
+        <div id="palpites-gerais"></div>
+    </div>
+</div>
+
+<div class="admin-icon" onclick="abrirAdmin()">⚙️</div>
 
 <script>
-    // A SUA URL MAIS RECENTE
     const API_URL = "https://script.google.com/macros/s/AKfycbwrkEYHlvsJf8mMd4gcm_Yl4Fu9q3i6XM1PpkdKS9AJZ9gI0FqYafpk0fillSiLsnGZ/exec"; 
-
-    let jogoInicializado = true;
 
     window.onload = () => carregarDados();
 
     async function carregarDados() {
-        try {
-            const res = await fetch(API_URL, { redirect: "follow" });
-            const textResponse = await res.text(); // Lemos o texto bruto primeiro para evitar tela branca se for erro de HTML
-            
-            try {
-                const data = JSON.parse(textResponse);
-                
-                jogoInicializado = data.jogo.inicializado;
+        const res = await fetch(API_URL);
+        const data = await res.json();
+        renderLista(data.lista);
+        document.getElementById('nameA').innerText = data.jogo.tA;
+        document.getElementById('nameB').innerText = data.jogo.tB;
+        document.getElementById('imgA').src = `https://flagcdn.com/w160/${data.jogo.cA}.png`;
+        document.getElementById('imgB').src = `https://flagcdn.com/w160/${data.jogo.cB}.png`;
+        document.getElementById('loader').classList.add('hidden');
+        document.getElementById('step-login').classList.remove('hidden');
+    }
 
-                if (!jogoInicializado) {
-                    document.getElementById('aviso-admin').style.display = 'block';
-                    document.getElementById('btn-entrar-bolao').disabled = true;
-                    document.getElementById('btn-entrar-bolao').style.opacity = '0.5';
-                } else {
-                    document.getElementById('nameA').innerText = data.jogo.tA;
-                    document.getElementById('nameB').innerText = data.jogo.tB;
-                    document.getElementById('imgA').src = `https://flagcdn.com/w160/${data.jogo.cA}.png`;
-                    document.getElementById('imgB').src = `https://flagcdn.com/w160/${data.jogo.cB}.png`;
-                }
+    function irParaConsulta(sucesso = false) {
+        document.querySelectorAll('.app-container').forEach(el => el.classList.add('hidden'));
+        document.getElementById('step-view').classList.remove('hidden');
+        if(sucesso) document.getElementById('msg-sucesso').style.display = 'block';
+    }
 
-                renderLista(data.lista);
-                renderStats(data.stats);
-                
-                document.getElementById('loader').style.display = 'none';
-                
-            } catch (jsonError) {
-                // Se cair aqui, o Google enviou uma tela de erro ou login em vez dos dados da planilha
-                document.getElementById('loader').innerHTML = `
-                    <div style="padding: 20px; text-align: center; max-width: 400px;">
-                        <h2 style="color: #d63031;">Erro de Permissão 🔴</h2>
-                        <p style="font-size: 0.95rem; color: #2d3436;">O Google bloqueou o acesso à planilha.</p>
-                        <ul style="text-align: left; font-size: 0.85rem; color: #636e72;">
-                            <li>Abra o Google Apps Script.</li>
-                            <li>Clique em <b>Implantar</b> > <b>Gerenciar implantações</b>.</li>
-                            <li>Edite (no lápis) e marque <b>Nova Versão</b>.</li>
-                            <li>Em Quem tem acesso, coloque obrigatoriamente <b>Qualquer pessoa</b>.</li>
-                        </ul>
-                    </div>
-                `;
-            }
-        } catch (e) { 
-            // Se cair aqui, o site não conseguiu nem chegar no link
-            document.getElementById('loader').innerHTML = `
-                <div style="padding: 20px; text-align: center;">
-                    <h2 style="color: #d63031;">Erro de Conexão ❌</h2>
-                    <p style="font-size: 0.9rem;">Não foi possível acessar o link do Google. Verifique sua internet ou se o link da API está correto.</p>
-                </div>
-            `;
-        }
+    function irParaLogin() {
+        document.querySelectorAll('.app-container').forEach(el => el.classList.add('hidden'));
+        document.getElementById('step-login').classList.remove('hidden');
+    }
+
+    function entrar() {
+        const nome = document.getElementById('user-name').value.trim();
+        if(!nome) return alert("Digite seu nome!");
+        localStorage.setItem('userBolao', nome);
+        document.getElementById('step-login').classList.add('hidden');
+        document.getElementById('step-bet').classList.remove('hidden');
+    }
+
+    async function apostar() {
+        const nome = localStorage.getItem('userBolao');
+        const placar = `${document.getElementById('scoreA').value} x ${document.getElementById('scoreB').value}`;
+        await fetch(`${API_URL}?nome=${encodeURIComponent(nome)}&placar=${encodeURIComponent(placar)}`);
+        irParaConsulta(true);
+        location.reload(); // Recarrega para atualizar a lista
     }
 
     function renderLista(lista) {
         const div = document.getElementById('palpites-gerais');
-        if(lista.length === 0) {
-            div.innerHTML = '<p style="font-size:0.85rem; color:#888; text-align:center;">Nenhum palpite enviado ainda.</p>';
-            return;
-        }
         div.innerHTML = lista.map(p => `
             <div class="bet-item">
                 <span class="bet-user">${p.nome}</span>
@@ -180,68 +120,7 @@
         `).join('');
     }
 
-    function renderStats(stats) {
-        const div = document.getElementById('infografico');
-        if(stats.length === 0) {
-            div.innerHTML = '<p style="font-size:0.85rem; color:#888;">As estatísticas aparecerão após os primeiros palpites.</p>';
-            return;
-        }
-        div.innerHTML = stats.slice(0, 5).map(s => `
-            <div class="stats-item">
-                <div class="stats-info"><span>${s.placar}</span><span>${s.porcentagem}%</span></div>
-                <div class="stats-bar"><div class="stats-fill" style="width: ${s.porcentagem}%"></div></div>
-            </div>
-        `).join('');
-    }
-
-    function entrar() {
-        if(!jogoInicializado) return;
-        const nome = document.getElementById('user-name').value.trim();
-        if(!nome) return alert("Digite seu nome");
-        localStorage.setItem('userBolao', nome);
-        document.getElementById('step-login').classList.add('hidden');
-        document.getElementById('step-bet').classList.remove('hidden');
-    }
-
-    async function apostar() {
-        try {
-            const nome = localStorage.getItem('userBolao');
-            const p1 = document.getElementById('scoreA').value;
-            const p2 = document.getElementById('scoreB').value;
-            const placar = `${p1} x ${p2}`;
-
-            document.getElementById('loader').style.display = 'flex';
-            document.getElementById('loader').innerHTML = '<h3 style="color: var(--primary);">Registrando...</h3>';
-            await fetch(`${API_URL}?nome=${encodeURIComponent(nome)}&placar=${encodeURIComponent(placar)}`, { redirect: "follow" });
-            location.reload();
-        } catch(e) {
-            alert("Erro ao salvar o palpite. Tente novamente.");
-            location.reload();
-        }
-    }
-
-    function abrirAdmin() { 
-        document.getElementById('admin-panel').style.display = 'block'; 
-    }
-
-    async function salvarJogo() {
-        try {
-            const tA = document.getElementById('adm-timeA').value;
-            const cA = document.getElementById('adm-codeA').value.toLowerCase();
-            const tB = document.getElementById('adm-timeB').value;
-            const cB = document.getElementById('adm-codeB').value.toLowerCase();
-
-            if(!tA || !cA || !tB || !cB) return alert("Preencha todos os campos do jogo!");
-
-            document.getElementById('loader').style.display = 'flex';
-            document.getElementById('loader').innerHTML = '<h3 style="color: var(--primary);">Atualizando Jogo...</h3>';
-            await fetch(`${API_URL}?admin=true&timeA=${encodeURIComponent(tA)}&codeA=${encodeURIComponent(cA)}&timeB=${encodeURIComponent(tB)}&codeB=${encodeURIComponent(cB)}`, { redirect: "follow" });
-            location.reload();
-        } catch(e) {
-            alert("Erro ao configurar o jogo. Verifique o link e tente novamente.");
-            location.reload();
-        }
-    }
+    function abrirAdmin() { alert("Use o painel admin via URL direta se necessário."); }
 </script>
 </body>
 </html>
