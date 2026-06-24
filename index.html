@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bolão Pro - Água Fria Bet</title>
-    <link href=";400;600&display=swap" rel="stylesheet">
+    <title>Bolão Pro - Futebol</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         :root { --primary: #00b894; --secondary: #0984e3; --bg: #f0f2f5; --card: #ffffff; }
         * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
@@ -12,7 +12,7 @@
         .app-container { max-width: 500px; margin: 0 auto; }
         .card { background: var(--card); border-radius: 20px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-bottom: 20px; }
         .header { text-align: center; padding: 20px 0; }
-        .header h1 { margin: 0; font-size: 1.5rem; color: var(--secondary); }
+        .header h1 { margin: 0; font-size: 1.4rem; color: var(--secondary); }
         button { width: 100%; padding: 15px; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: 0.3s; margin-top: 10px; }
         .btn-main { background: var(--primary); color: white; }
         .btn-sec { background: #dfe6e9; color: #636e72; }
@@ -21,6 +21,8 @@
         .bet-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #f1f1f1; }
         .bet-user { font-size: 0.9rem; font-weight: 600; }
         .bet-score { background: #f0f2f5; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; color: var(--secondary); }
+        .stats-bar { height: 10px; background: #eee; border-radius: 5px; overflow: hidden; margin: 5px 0 15px; }
+        .stats-fill { height: 100%; background: var(--primary); }
     </style>
 </head>
 <body>
@@ -28,7 +30,7 @@
 <div id="loader" class="app-container" style="text-align:center; padding-top:50px;">Carregando...</div>
 
 <div id="step-login" class="app-container hidden">
-    <div class="header"><h1>🏆 Bolão Oficial| Água Fria Bet</h1></div>
+    <div class="header"><h1>🏆 Bolão Oficial | Água Fria Bet</h1></div>
     <div class="card">
         <input type="text" id="user-name" placeholder="Digite seu nome para apostar" style="width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #ddd; margin-bottom:10px;">
         <button class="btn-main" onclick="entrar()">Confirmar Nome e Apostar</button>
@@ -38,11 +40,11 @@
 
 <div id="step-bet" class="app-container hidden">
     <div class="card">
-        <div style="display:flex; justify-content:space-between; align-items:center; text-align:center;">
+        <div style="display:flex; justify-content:space-around; align-items:center; text-align:center;">
             <div><img id="imgA" width="50"><p id="nameA"></p></div>
-            <div style="display:flex; gap:10px;">
-                <input type="number" id="scoreA" style="width:50px; height:50px; text-align:center; border:2px solid #eee; border-radius:10px;">
-                <input type="number" id="scoreB" style="width:50px; height:50px; text-align:center; border:2px solid #eee; border-radius:10px;">
+            <div style="display:flex; gap:5px;">
+                <input type="number" id="scoreA" style="width:45px; height:45px; text-align:center; border:2px solid #eee; border-radius:10px;">
+                <input type="number" id="scoreB" style="width:45px; height:45px; text-align:center; border:2px solid #eee; border-radius:10px;">
             </div>
             <div><img id="imgB" width="50"><p id="nameB"></p></div>
         </div>
@@ -53,34 +55,53 @@
 
 <div id="step-view" class="app-container hidden">
     <div id="msg-sucesso" class="card" style="display:none; background:#00b894; color:white; text-align:center;">
-        <h2 style="margin:0;">✅ Palpite Registrado!</h2>
+        <h2 style="margin:0;">✅ Seu Palpite Foi Registrado!</h2>
     </div>
     <div class="card">
         <button class="btn-main" onclick="irParaLogin()">Dê o seu palpite</button>
     </div>
     <div class="card">
+        <h3>📊 Tendência</h3>
+        <div id="infografico"></div>
+        <hr style="border:0; border-top:1px solid #eee; margin:20px 0;">
         <h3>👥 Todos os Palpites</h3>
         <div id="palpites-gerais"></div>
     </div>
 </div>
 
-<div class="admin-icon" onclick="abrirAdmin()">⚙️</div>
+<div class="admin-icon" onclick="alert('Painel Admin indisponível por aqui. Use a URL da planilha.')">⚙️</div>
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwrkEYHlvsJf8mMd4gcm_Yl4Fu9q3i6XM1PpkdKS9AJZ9gI0FqYafpk0fillSiLsnGZ/exec"; 
 
-    window.onload = () => carregarDados();
-
-    async function carregarDados() {
+    window.onload = async () => {
         const res = await fetch(API_URL);
         const data = await res.json();
-        renderLista(data.lista);
+        
         document.getElementById('nameA').innerText = data.jogo.tA;
         document.getElementById('nameB').innerText = data.jogo.tB;
         document.getElementById('imgA').src = `https://flagcdn.com/w160/${data.jogo.cA}.png`;
         document.getElementById('imgB').src = `https://flagcdn.com/w160/${data.jogo.cB}.png`;
+        
+        renderLista(data.lista);
+        renderStats(data.stats);
+        
         document.getElementById('loader').classList.add('hidden');
         document.getElementById('step-login').classList.remove('hidden');
+    }
+
+    function renderStats(stats) {
+        const div = document.getElementById('infografico');
+        div.innerHTML = stats.slice(0, 3).map(s => `
+            <div style="font-size:0.8rem; font-weight:600; display:flex; justify-content:space-between;"><span>${s.placar}</span><span>${s.porcentagem}%</span></div>
+            <div class="stats-bar"><div class="stats-fill" style="width: ${s.porcentagem}%"></div></div>
+        `).join('');
+    }
+
+    function renderLista(lista) {
+        document.getElementById('palpites-gerais').innerHTML = lista.map(p => `
+            <div class="bet-item"><span class="bet-user">${p.nome}</span><span class="bet-score">${p.placar}</span></div>
+        `).join('');
     }
 
     function irParaConsulta(sucesso = false) {
@@ -98,7 +119,7 @@
         const nome = document.getElementById('user-name').value.trim();
         if(!nome) return alert("Digite seu nome!");
         localStorage.setItem('userBolao', nome);
-        document.getElementById('step-login').classList.add('hidden');
+        document.querySelectorAll('.app-container').forEach(el => el.classList.add('hidden'));
         document.getElementById('step-bet').classList.remove('hidden');
     }
 
@@ -106,21 +127,8 @@
         const nome = localStorage.getItem('userBolao');
         const placar = `${document.getElementById('scoreA').value} x ${document.getElementById('scoreB').value}`;
         await fetch(`${API_URL}?nome=${encodeURIComponent(nome)}&placar=${encodeURIComponent(placar)}`);
-        irParaConsulta(true);
-        location.reload(); // Recarrega para atualizar a lista
+        location.reload(); // Recarrega para mostrar a tela de consulta atualizada
     }
-
-    function renderLista(lista) {
-        const div = document.getElementById('palpites-gerais');
-        div.innerHTML = lista.map(p => `
-            <div class="bet-item">
-                <span class="bet-user">${p.nome}</span>
-                <span class="bet-score">${p.placar}</span>
-            </div>
-        `).join('');
-    }
-
-    function abrirAdmin() { alert("Use o painel admin via URL direta se necessário."); }
 </script>
 </body>
 </html>
